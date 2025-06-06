@@ -14,7 +14,7 @@ The structure of this repository is:
 │   ├── prompts/          
 │       ├──prompt template.txt     # LLM prompt template used in this study
 │       └──prompts used.csv  
-│   └── responses/             # response from LLMs
+│   └── feedback to essays/             # response from LLMs
 │
 ├── data collection pipeline/     # GPT-4o, DeepSeek, LLaMA
 │   ├── gender context.py       # construct counterfactual gender essays and save into data
@@ -27,7 +27,8 @@ The structure of this repository is:
 │   └── postprocess.py         # standardise llms output formats
 │  
 ├── evaluation/                # bias analysis function module
-│   └── cosine_similarities.py # calculate cosine similarities
+│   ├── cosine_similarities.py # calculate cosine similarities
+│   ├── score_value_analysis.py  # analysis of scores given to essays
 │   └── bias_metrics.py        # OR, SWEAT, LIWC, t-testing
 │
 ├── config/                    # configuration file (key, path)

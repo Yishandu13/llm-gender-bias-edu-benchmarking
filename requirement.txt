@@ -1,0 +1,23 @@
+# Core
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+
+# LLM API
+openai>=1.0.0
+
+# Utilities
+tqdm>=4.65.0
+openpyxl>=3.1.0   # Excel I/O
+ipykernel>=6.25.0 # for running Jupyter notebooks
+
+# Optional but useful
+statsmodels>=0.14.0
+pingouin>=0.5.0   # effect size and stat utils

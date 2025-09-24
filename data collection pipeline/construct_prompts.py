@@ -37,7 +37,3 @@ df["prompt"] = df.apply(lambda row: PROMPT_TEMPLATE.format(
     essay_id=row["Essay ID"],
     essay_text=row["Essay Text"]
 ), axis=1)
-
-#save into GitHub repo
-repo_path = f"/content/{GITHUB_REPO_NAME}/data/prompts"
-os.chdir(repo_path)

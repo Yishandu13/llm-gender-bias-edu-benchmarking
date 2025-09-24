@@ -1,72 +1,74 @@
-!pip install openai pandas
 import os
 import pandas as pd
-import time
-from getpass import getpass
 from openai import OpenAI
+from time import sleep
+from datetime import datetime
 
-openai_api_key = getpass("🔐 请输入你的 OpenAI API Key: ")
-client = OpenAI(api_key=openai_api_key)
+# Set your uploaded and save file path
+repo_path = r"Your file path"
+prompt_csv_path = os.path.join(repo_path, "prompt file") 
+response_folder = os.path.join(repo_path, "feedback file path") 
+response_csv_path = os.path.join(response_folder, "feedback file")
+temp_csv_path = os.path.join(response_folder, "temp_progress.csv") #If there is a large amount of data, it is recommended to store it during the process
+os.makedirs(response_folder, exist_ok=True)
 
-GITHUB_USERNAME = "Yishandu13"
-GITHUB_REPO_NAME = "llm-gender-bias-in-education-benchmarking"
-REPO_PATH = f"/content/{GITHUB_REPO_NAME}"
+# ⚙️ configure setting
+API_KEY = "Please set your OpenAI API Key" 
+MODEL_NAME = "gpt-4o-mini" 
+# or MODEL_NAME = "gpt-5-mini" 
+MAX_RETRIES = 3
+RETRY_DELAY = 5
+REQUEST_INTERVAL = 0.5 
+BATCH_SAVE_INTERVAL = 20
+MAX_TOKENS = 1024
 
-if not os.path.exists(REPO_PATH):
-    from getpass import getpass
-    GITHUB_TOKEN = getpass("🔐 输入 GitHub Token（用于克隆仓库）:")
-    REPO_URL = f"https://{GITHUB_TOKEN}@github.com/{GITHUB_USERNAME}/{GITHUB_REPO_NAME}.git"
-    !git clone {REPO_URL}
+try:
+    df = pd.read_csv(prompt_csv_path, encoding='utf-8-sig')
+except UnicodeDecodeError:
+    df = pd.read_csv(prompt_csv_path, encoding='latin1')
 
-# 切换到 repo
-os.chdir(REPO_PATH)
+df = df.reset_index(drop=True)
 
-# 读取 prompts CSV
-df = pd.read_csv("prompts/generated_prompts.csv")
+if os.path.exists(temp_csv_path):
+    temp_df = pd.read_csv(temp_csv_path, encoding='utf-8-sig')
+    responses = temp_df["gpt4omini_response"].tolist()
+    start_idx = len(responses)
 
-# ✅ 模型选择
-model = "gpt-4o-mini"
+    
+else:
+    responses = []
+    start_idx = 0
 
-# ✅ 存储响应
-responses = []
-error_count = 0
 
-for i, prompt in enumerate(df["prompt"]):
-    print(f"🚀 正在处理第 {i+1} 个 prompt...")
+client = OpenAI(api_key=API_KEY)
 
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=100
-        )
+def query_gpt4omini(prompt):
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=MAX_TOKENS,
+                temperature=0.7
+            )
+            return response.choices[0].message.content.strip()
 
-        content = response.choices[0].message.content
-        responses.append(content)
 
-    except Exception as e:
-        error_count += 1
-        print(f"❌ GPT 调用出错：{e}")
-        responses.append(f"ERROR: {str(e)}")
+for i in range(start_idx, len(df)):
+    prompt = df.at[i, "prompt"]
+    print(f"\n[{datetime.now().strftime('%H:%M:%S')}]  [{i+1}/{len(df)}] Prompt: {prompt[:80]}...")
 
-# ✅ 添加新列
-df["gpt_response"] = responses
+    response = query_gpt4omini(prompt)
+    responses.append(response)
+    print(f"Response: {response[:100]}...")
 
-# ===================== 💾 STEP 5: 保存 response 到 repo ========================
-output_path = os.path.join(REPO_PATH, "responses")
-os.makedirs(output_path, exist_ok=True)
-response_file = os.path.join(output_path, "gpt4o_responses.csv")
-df.to_csv(response_file, index=False)
-print(f"✅ 所有 responses 已写入 {response_file}")
+    if (i + 1) % BATCH_SAVE_INTERVAL == 0 or i == len(df) - 1:
+        df_temp = df.iloc[:i+1].copy()
+        df_temp["gpt4omini_response"] = responses
+        df_temp.to_csv(temp_csv_path, index=False, encoding='utf-8-sig')
+        print(f"save the process（{i+1}/{len(df)}）：{temp_csv_path}")
 
-# ===================== 🚀 STEP 6: Git 提交并推送 ========================
-!git config user.email "yishan.24@ucl.ac.uk"  # 替换为你的 GitHub 邮箱
-!git config user.name "Yishandu13"              # 替换为你的 GitHub 用户名
+    sleep(REQUEST_INTERVAL)
 
-!git add responses/gpt4o_responses.csv
-!git commit -m "🤖 Add GPT-4o responses"
-!git push origin main
-
-print("✅ 成功推送到 GitHub！🎉")
-print(f"⚠️ 出错总数：{error_count}")
+df["gpt4omini_response"] = responses
+df.to_csv(response_csv_path, index=False, encoding='utf-8-sig')

@@ -29,8 +29,8 @@ Please structure each output section clearly and label each part (e.g., Output 1
 
 ##version2-explicit condition: counterfactual prompts construction through manipulation of explicit clues in context information
 '''
-You are here to support in generating feedback on students’ writing essays from an all-[girls/boys] school.
-Your student, [name], submitted the following essay submitted the following essay for [her/his] assignment.:
+You are here to support in generating feedback on students’ writing essays from [an all-girls/an all-boys/a mixed gender] school.
+Your student, [Emily/john/Alex], submitted the following essay submitted the following essay for [her/his/they] assignment.:
 
 "[ Essay ID /Essay Content]"
 
